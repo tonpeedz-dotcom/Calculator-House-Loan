@@ -47,8 +47,7 @@
         }
         label {
             font-weight: 600;
-            margin-bottom: 6px;
-            color: #34495e;
+            margin-bottom: 6px;            color: #34495e;
             font-size: 0.95rem;
         }
         input, select {
@@ -97,8 +96,7 @@
         }
         button.export-btn {
             background: #16a085;
-            margin-top: 15px;
-        }
+            margin-top: 15px;        }
         button.export-btn:hover {
             background: #138d75;
         }
@@ -147,14 +145,21 @@
         }
         .summary-label {
             font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 4px;
+            color: #2c3e50;            margin-bottom: 4px;
         }
         .summary-value {
             color: #16a085;
             font-weight: bold;
             font-size: 1.1rem;
         }
+        .summary-percent {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+        .percent-good { color: #27ae60; }
+        .percent-moderate { color: #e67e22; }
+        .percent-high { color: #c0392b; }
         .warning {
             color: #e67e22;
             font-size: 0.9rem;
@@ -189,8 +194,7 @@
             background: rgba(255,255,255,0.1);
             padding: 8px 12px;
             border-radius: 6px;
-        }
-        .param-label {
+        }        .param-label {
             font-weight: 500;
             opacity: 0.85;
             font-size: 0.8rem;
@@ -226,7 +230,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>🏡 จำลองการผ่อนบ้าน + วางแผนลดดอกเบี้ย คุณต้นปี๊ด ❤️</h1>
+    <h1>🏡 จำลองการผ่อนบ้าน + วางแผนลดดอกเบี้ย</h1>
     <p class="subtitle">คำนวณเปรียบเทียบระหว่างปล่อยดอกเบี้ยลอยตัว กับการทำ Refinance / Retention ทุก 3 ปี</p>
 
     <div class="form-grid">
@@ -239,8 +243,7 @@
             <input type="number" id="annualRate" value="2.5" step="0.01" min="0" placeholder="เช่น 2.5">
         </div>
         <div class="input-group">
-            <label>🛠️ แผนหลังปีที่ 3</label>
-            <select id="strategy" onchange="toggleStrategyLabel()">
+            <label>🛠️ แผนหลังปีที่ 3</label>            <select id="strategy" onchange="toggleStrategyLabel()">
                 <option value="refinance">ทำ Refinance / Retention ทุก 3 ปี</option>
                 <option value="floating">ปล่อยลอยตัวตามปกติ (ไม่ทำอะไรเลย)</option>
             </select>
@@ -289,8 +292,7 @@
                 <div class="param-item">
                     <span class="param-label">ค่างวด/เดือน</span>
                     <span class="param-value" id="reportMonthly">-</span>
-                </div>
-                <div class="param-item">
+                </div>                <div class="param-item">
                     <span class="param-label">เงินโปะ/ปี</span>
                     <span class="param-value" id="reportExtra">-</span>
                 </div>
@@ -320,6 +322,7 @@
                 <div class="summary-item">
                     <span class="summary-label">💸 ดอกเบี้ยรวมที่จ่าย</span>
                     <span class="summary-value" id="totalInterest">-</span>
+                    <span class="summary-percent" id="interestPercent"></span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label">📦 ยอดจ่ายรวมทั้งหมด</span>
@@ -338,8 +341,7 @@
 
 <script>
     function formatNumber(num) {
-        return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
+        return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });    }
 
     function toggleStrategyLabel() {
         const strategy = document.getElementById('strategy').value;
@@ -388,8 +390,7 @@
             year++;
             
             // ใช้โครงสร้างดอกเบี้ยสลับตามช่วงปี
-            let currentAnnualRate = (year <= 3) ? annualRate : futureRate;
-            let monthlyRate = currentAnnualRate / 100 / 12;
+            let currentAnnualRate = (year <= 3) ? annualRate : futureRate;            let monthlyRate = currentAnnualRate / 100 / 12;
 
             // เช็คแจ้งเตือนกรณีดอกเบี้ยจมกินค่างวด
             if (year === 1 || year === 4) {
@@ -438,8 +439,7 @@
             });
         }
 
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
+        const tbody = document.getElementById('tableBody');        tbody.innerHTML = '';
         rows.forEach(row => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -460,6 +460,20 @@
         document.getElementById('totalInterest').textContent = `${formatNumber(totalInterestPaid)} บาท`;
         document.getElementById('totalPaid').textContent = `${formatNumber(totalPaid)} บาท`;
 
+        // ✅ คำนวณและแสดง % ดอกเบี้ยเทียบกับเงินต้น
+        const interestPercent = (totalInterestPaid / loanAmount) * 100;
+        const percentEl = document.getElementById('interestPercent');
+        percentEl.textContent = `(${interestPercent.toFixed(2)}% ของเงินต้น)`;
+        
+        // สีตามระดับความคุ้มค่า
+        if (interestPercent < 30) {
+            percentEl.className = 'summary-percent percent-good';
+        } else if (interestPercent < 60) {
+            percentEl.className = 'summary-percent percent-moderate';
+        } else {
+            percentEl.className = 'summary-percent percent-high';
+        }
+
         document.getElementById('exportBtn').style.display = 'inline-block';
     }
 
@@ -474,8 +488,7 @@
         document.getElementById('strategy').value = 'refinance';
         document.getElementById('futureRate').value = '2.8';
         document.getElementById('futureRateLabel').textContent = '📊 ดอกเบี้ยเฉลี่ยหลังรีฯ ทุก 3 ปี (%)';
-        document.getElementById('monthlyPayment').value = '45000';
-        document.getElementById('annualExtra').value = '0';
+        document.getElementById('monthlyPayment').value = '45000';        document.getElementById('annualExtra').value = '0';
         document.getElementById('warningMessage').innerHTML = '';
         hideReport();
         calculate();
