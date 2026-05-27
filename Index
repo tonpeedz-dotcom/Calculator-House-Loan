@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมจำลองผ่อนบ้าน + ระบบ Refinance / Retention</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 950px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #34495e;
+            font-size: 0.95rem;
+        }
+        input, select {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Sarabun', sans-serif;
+            transition: border 0.2s;
+            background-color: white;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52,152,219,0.2);
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0 30px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button.reset {
+            background: #95a5a6;
+        }
+        button.reset:hover {
+            background: #7f8c8d;
+        }
+        button.export-btn {
+            background: #16a085;
+            margin-top: 15px;
+        }
+        button.export-btn:hover {
+            background: #138d75;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+        th {
+            background: #2c3e50;
+            color: white;
+            padding: 12px 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #ecf0f1;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+        td:first-child, th:first-child {
+            text-align: center;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .summary {
+            background: #ecf0f1;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            font-size: 0.95rem;
+        }
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .summary-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        .summary-value {
+            color: #16a085;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .warning {
+            color: #e67e22;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+        /* ส่วนหัวรายงานสำหรับ Export */
+        .report-header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+        .report-header h2 {
+            margin: 0 0 15px;
+            font-size: 1.5rem;
+        }
+        .params-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            font-size: 0.9rem;
+        }
+        .param-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        .param-label {
+            font-weight: 500;
+            opacity: 0.85;
+            font-size: 0.8rem;
+        }
+        .param-value {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-top: 4px;
+        }
+        #reportArea {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+            margin-top: 30px;
+        }
+        .report-content {
+            padding: 20px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .params-grid {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🏡 จำลองการผ่อนบ้าน + วางแผนลดดอกเบี้ย</h1>
+    <p class="subtitle">คำนวณเปรียบเทียบระหว่างปล่อยดอกเบี้ยลอยตัว กับการทำ Refinance / Retention ทุก 3 ปี</p>
+
+    <div class="form-grid">
+        <div class="input-group">
+            <label>💰 วงเงินกู้ (บาท)</label>
+            <input type="number" id="loanAmount" value="8000000" step="1000" min="0" placeholder="เช่น 8000000">
+        </div>
+        <div class="input-group">
+            <label>📈 ดอกเบี้ยปีที่ 1-3 (%)</label>
+            <input type="number" id="annualRate" value="2.5" step="0.01" min="0" placeholder="เช่น 2.5">
+        </div>
+        <div class="input-group">
+            <label>🛠️ แผนหลังปีที่ 3</label>
+            <select id="strategy" onchange="toggleStrategyLabel()">
+                <option value="refinance">ทำ Refinance / Retention ทุก 3 ปี</option>
+                <option value="floating">ปล่อยลอยตัวตามปกติ (ไม่ทำอะไรเลย)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label id="futureRateLabel">📊 ดอกเบี้ยเฉลี่ยหลังรีฯ ทุก 3 ปี (%)</label>
+            <input type="number" id="futureRate" value="2.8" step="0.01" min="0" placeholder="เช่น 2.8">
+        </div>
+        <div class="input-group">
+            <label>💵 ค่างวดผ่อนต่อเดือน (บาท)</label>
+            <input type="number" id="monthlyPayment" value="45000" step="100" min="0" placeholder="จำนวนเงินที่จ่ายจริงต่อเดือน">
+        </div>
+        <div class="input-group">
+            <label>🎁 เงินโปะพิเศษรายปี (บาท)</label>
+            <input type="number" id="annualExtra" value="0" step="1000" min="0" placeholder="0 = ไม่มี">
+        </div>
+    </div>
+
+    <div class="button-group">
+        <button onclick="calculate()">📊 คำนวณ</button>
+        <button class="reset" onclick="resetForm()">🔄 ล้างข้อมูล</button>
+    </div>
+
+    <div id="warningMessage" class="warning"></div>
+
+    <div id="reportArea" style="display: none;">
+        <div class="report-header">
+            <h2>📋 รายงานจำลองการผ่อนบ้านและกลยุทธ์ดอกเบี้ย</h2>
+            <div class="params-grid">
+                <div class="param-item">
+                    <span class="param-label">วงเงินกู้</span>
+                    <span class="param-value" id="reportLoan">-</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">ดอกเบี้ยปี 1-3</span>
+                    <span class="param-value" id="reportRate">-</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">แผนหลังปีที่ 3</span>
+                    <span class="param-value" id="reportStrategy">-</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">ดอกเบี้ยหลังปีที่ 3</span>
+                    <span class="param-value" id="reportFutureRate">-</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">ค่างวด/เดือน</span>
+                    <span class="param-value" id="reportMonthly">-</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">เงินโปะ/ปี</span>
+                    <span class="param-value" id="reportExtra">-</span>
+                </div>
+            </div>
+        </div>
+        <div class="report-content">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ปีที่</th>
+                            <th>อัตราดอกเบี้ย</th>
+                            <th>เงินต้นที่จ่ายปีนี้</th>
+                            <th>ดอกเบี้ยที่จ่ายปีนี้</th>
+                            <th>ยอดคงเหลือสิ้นปี</th>
+                            <th>ดอกเบี้ยสะสม</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div class="summary" id="summaryBox">
+                <div class="summary-item">
+                    <span class="summary-label">⏱️ ใช้เวลาทั้งหมด</span>
+                    <span class="summary-value" id="totalYears">-</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">💸 ดอกเบี้ยรวมที่จ่าย</span>
+                    <span class="summary-value" id="totalInterest">-</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">📦 ยอดจ่ายรวมทั้งหมด</span>
+                    <span class="summary-value" id="totalPaid">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 25px;">
+        <button id="exportBtn" class="export-btn" onclick="exportToJPG()" style="display: none;">
+            📸 ส่งออกรายงาน (JPG)
+        </button>
+    </div>
+</div>
+
+<script>
+    function formatNumber(num) {
+        return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function toggleStrategyLabel() {
+        const strategy = document.getElementById('strategy').value;
+        const label = document.getElementById('futureRateLabel');
+        const futureRateInput = document.getElementById('futureRate');
+        
+        if (strategy === 'refinance') {
+            label.textContent = '📊 ดอกเบี้ยเฉลี่ยหลังรีฯ ทุก 3 ปี (%)';
+            futureRateInput.value = '2.8';
+        } else {
+            label.textContent = '📈 ดอกเบี้ยลอยตัวหลังปีที่ 3 (%)';
+            futureRateInput.value = '5.5';
+        }
+    }
+
+    function calculate() {
+        const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+        const annualRate = parseFloat(document.getElementById('annualRate').value);
+        const strategy = document.getElementById('strategy').value;
+        const futureRate = parseFloat(document.getElementById('futureRate').value);
+        const monthlyPayment = parseFloat(document.getElementById('monthlyPayment').value);
+        const annualExtra = parseFloat(document.getElementById('annualExtra').value) || 0;
+
+        document.getElementById('warningMessage').innerHTML = '';
+
+        if (isNaN(loanAmount) || loanAmount <= 0 || isNaN(annualRate) || annualRate < 0 || isNaN(futureRate) || futureRate < 0 || isNaN(monthlyPayment) || monthlyPayment <= 0) {
+            document.getElementById('warningMessage').innerHTML = '⚠️ กรุณากรอกข้อมูลให้ถูกต้อง (ค่าต้องมากกว่า 0)';
+            hideReport();
+            return;
+        }
+
+        // อัปเดตหัวรายงานด้วยค่าที่กรอก
+        document.getElementById('reportLoan').textContent = formatNumber(loanAmount) + ' บาท';
+        document.getElementById('reportRate').textContent = annualRate.toFixed(2) + '%';
+        document.getElementById('reportStrategy').textContent = strategy === 'refinance' ? 'รีไฟแนนซ์/Retention ทุก 3 ปี' : 'ปล่อยลอยตัวไม่ปรับลด';
+        document.getElementById('reportFutureRate').textContent = futureRate.toFixed(2) + '%';
+        document.getElementById('reportMonthly').textContent = formatNumber(monthlyPayment) + ' บาท';
+        document.getElementById('reportExtra').textContent = formatNumber(annualExtra) + ' บาท';
+
+        let balance = loanAmount;
+        let year = 0;
+        let totalInterestPaid = 0;
+        const rows = [];
+
+        while (balance > 0 && year < 100) {
+            year++;
+            
+            // ใช้โครงสร้างดอกเบี้ยสลับตามช่วงปี
+            let currentAnnualRate = (year <= 3) ? annualRate : futureRate;
+            let monthlyRate = currentAnnualRate / 100 / 12;
+
+            // เช็คแจ้งเตือนกรณีดอกเบี้ยจมกินค่างวด
+            if (year === 1 || year === 4) {
+                const currentMonthInterest = balance * monthlyRate;
+                if (monthlyPayment <= currentMonthInterest && annualExtra === 0) {
+                    document.getElementById('warningMessage').innerHTML = `⚠️ คำเตือน: ในปีที่ ${year} เป็นต้นไป ค่างวดน้อยกว่าดอกเบี้ยที่เกิดขึ้น ยอดหนี้จะไม่ลดลง! กรุณาเพิ่มค่างวดหรือปรับแผนดอกเบี้ย`;
+                }
+            }
+
+            let principalPaidThisYear = 0;
+            let interestPaidThisYear = 0;
+
+            for (let month = 1; month <= 12; month++) {
+                if (balance <= 0) break;
+
+                const interest = balance * monthlyRate;
+                let principal = monthlyPayment - interest;
+
+                if (principal <= 0) {
+                    principal = 0;
+                    interestPaidThisYear += monthlyPayment;
+                    totalInterestPaid += monthlyPayment;
+                    continue;
+                }
+
+                principal = Math.min(principal, balance);
+                balance -= principal;
+                principalPaidThisYear += principal;
+                interestPaidThisYear += interest;
+                totalInterestPaid += interest;
+            }
+
+            if (annualExtra > 0 && balance > 0) {
+                const extra = Math.min(annualExtra, balance);
+                balance -= extra;
+                principalPaidThisYear += extra;
+            }
+
+            rows.push({
+                year,
+                rate: currentAnnualRate,
+                principal: principalPaidThisYear,
+                interest: interestPaidThisYear,
+                balance,
+                cumulativeInterest: totalInterestPaid
+            });
+        }
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        rows.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.year}</td>
+                <td style="color: ${row.year <= 3 ? '#16a085' : (strategy === 'refinance' ? '#2980b9' : '#c0392b')}; font-weight: bold;">${row.rate.toFixed(2)}%</td>
+                <td>${formatNumber(row.principal)}</td>
+                <td>${formatNumber(row.interest)}</td>
+                <td>${formatNumber(row.balance)}</td>
+                <td>${formatNumber(row.cumulativeInterest)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('reportArea').style.display = 'block';
+
+        const totalPaid = loanAmount + totalInterestPaid;
+        document.getElementById('totalYears').textContent = `${year} ปี`;
+        document.getElementById('totalInterest').textContent = `${formatNumber(totalInterestPaid)} บาท`;
+        document.getElementById('totalPaid').textContent = `${formatNumber(totalPaid)} บาท`;
+
+        document.getElementById('exportBtn').style.display = 'inline-block';
+    }
+
+    function hideReport() {
+        document.getElementById('reportArea').style.display = 'none';
+        document.getElementById('exportBtn').style.display = 'none';
+    }
+
+    function resetForm() {
+        document.getElementById('loanAmount').value = '8000000';
+        document.getElementById('annualRate').value = '2.5';
+        document.getElementById('strategy').value = 'refinance';
+        document.getElementById('futureRate').value = '2.8';
+        document.getElementById('futureRateLabel').textContent = '📊 ดอกเบี้ยเฉลี่ยหลังรีฯ ทุก 3 ปี (%)';
+        document.getElementById('monthlyPayment').value = '45000';
+        document.getElementById('annualExtra').value = '0';
+        document.getElementById('warningMessage').innerHTML = '';
+        hideReport();
+        calculate();
+    }
+
+    async function exportToJPG() {
+        const reportDiv = document.getElementById('reportArea');
+        if (!reportDiv || reportDiv.style.display === 'none') {
+            alert('ยังไม่มีรายงานให้ส่งออก กรุณากด "คำนวณ" ก่อน');
+            return;
+        }
+
+        try {
+            const exportBtn = document.getElementById('exportBtn');
+            exportBtn.style.display = 'none';
+
+            const canvas = await html2canvas(reportDiv, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                logging: false
+            });
+
+            exportBtn.style.display = 'inline-block';
+
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'mortgage-refinance-report.jpg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert('ดาวน์โหลดรายงานเรียบร้อย! สามารถส่งไฟล์ภาพผ่าน LINE ได้เลย');
+            }, 'image/jpeg', 0.95);
+
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert('เกิดข้อผิดพลาดในการส่งออก กรุณาลองใหม่');
+            document.getElementById('exportBtn').style.display = 'inline-block';
+        }
+    }
+
+    window.onload = function() {
+        calculate();
+    };
+</script>
+</body>
+</html>
